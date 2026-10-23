@@ -81,3 +81,65 @@ chief:[ХЕШ СКРЫТ]:20748:0:99999:7:::
 и параметры сроков их действия. Права доступа ограничивают чтение хешей
 обычными пользователями. Команда stat показывает свойства файла,
 а команда cat — его содержимое.
+
+3. Список групп пользователей 
+cat/etc/group
+.... 
+sudo:x:27:chief
+....
+chief:x:1000:
+
+4. Sozdanie novoy uchetnoy zaspisi
+sudo useradd -m -s /bin/bash <name>
+-m - avtomaticheskoe sozdanie odnoimennogo polzovatelu kataloga
+-s - vibor komandnoy obolochki po umolchaniyu
+
+5. izmenenie nastroek uchet zapisey polzovateley
+sudo usermod -aG docker student(chief)
+
+6. sozdanie group
+chief@chief:~/InfS124$ sudo groupadd ok
+
+7. izmenenie paroley polzovateley i group
+chief@chief:~/InfS124$ sudo passwd <name> - smena parol inya polzovateley
+passwd - smena svoego parol base polzovatelu
+
+user22@chief:/home/chief/InfS124$ passwd 
+Changing password for user22.
+Current password: 
+New password: 
+Retype new password: 
+The password has not been changed.
+New password: 
+Retype new password: 
+passwd: password updated successfully
+user22@chief:/home/chief/InfS124$ exit
+exit
+chief@chief:~/InfS124$ sudo passwd user22 
+New password: 
+Retype new password: 
+passwd: password updated successfully
+chief@chief:~/InfS124$ 
+
+(Vse paroli eto - 1337)
+
+sudo gpasswd <imya group>? - semna parols group
+
+vhod polz v new group po parol
+newgrp <imya_group>
+primer
+newgrp ok 
+Password: 
+
+posle vklucheniya zapisi v group admin vvod paol dlya smen ne trebuetsa 
+dostup chlenam grupp pri etom predostavlyaetsa avtomat dlya vseh objects dlya kotorix prava predostavlyaetsa chlenan group vladelcev objects
+
+primer:
+Dlya organizazii dostupa v katalog drugogo polzovatelya neobhodimo bit vklyuchenim v gruppu vladelcev: 
+chief@chief:~/InfS124$ sudo usermod -aG user23 user22
+ot inemni user22 mojno prosmatrivat domashnuu papky user 23: 
+ls -l /home/user23
+total 0 
+ot drugogo polzovatelya ne vkluchenogo v gruppu user23 prosmotr domashney papki user23 nevozmojen:
+chief@chief:~/InfS124$ ls -l /home/user23
+ls: cannot open directory '/home/user23': Permission denied
