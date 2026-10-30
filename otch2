@@ -1,0 +1,58 @@
+Практическая работа: владельцы и права доступа к объектам Linux
+
+1. Просмотр свойств файла
+touch file1
+stat file1
+
+Создан пустой обычный файл file1. На данной системе его владелец и группа —
+chief:chief, права 0664 (-rw-rw-r--). Владелец и группа могут читать и
+записывать файл, остальные — только читать. stat также показывает размер,
+число ссылок и время доступа, изменения содержимого, изменения метаданных
+и создания файла.
+
+2. Подготовка общего каталога
+sudo mkdir /usr/share/Public2
+sudo chown chief:user23 /usr/share/Public2
+sudo chmod 775 /usr/share/Public2
+
+Изначально новый каталог имел права 0755 и владельца root:root. После смены
+владельца и прав: chief:user23, 0775 (drwxrwxr-x). В каталоге созданы F1,
+F2, F3 от имени chief, F4 и F5 от имени user22, F6 от имени user23. Для
+запуска действий от другого пользователя использовалась команда sudo runuser.
+
+3. Смена владельца и группы
+sudo chown <имя_пользователя>:<имя_группы> <имя_объекта>
+sudo chown :user23 /usr/share/Public2/F5
+sudo chown user22:user22 /usr/share/Public2/F5
+
+Первая команда меняет группу F5, не меняя владельца. Вторая устанавливает
+владельца user22 и группу user22. Проверить результат можно с помощью
+stat /usr/share/Public2/F5 или ls -ld /usr/share/Public2/F5.
+
+4. Изменение прав доступа
+sudo chmod <режим_доступа> <имя_объекта>
+
+Числовой режим состоит из трёх цифр: для владельца, группы и остальных.
+r = 4 (чтение), w = 2 (запись), x = 1 (исполнение файла или проход через
+каталог). Например, 777 = rwxrwxrwx, 666 = rw-rw-rw-, 664 = rw-rw-r--,
+775 = rwxrwxr-x. Для каталога запись позволяет изменять имена в нём при
+наличии права прохода; чтение позволяет получить список имён.
+
+В символьной форме u — владелец, g — группа, o — остальные, a — все;
+«+» добавляет право, «-» снимает, «=» задаёт указанный набор прав.
+Примеры:
+sudo chmod g-w /usr/share/Public2/F5
+sudo chmod u+w /usr/share/Public2/F5
+sudo chmod go+x /usr/share/Public2/F5
+sudo chmod 777 /usr/share/Public2/F5
+sudo chmod 775 /usr/share/Public2/F5
+sudo chmod ugo-rwx /usr/share/Public2/F5
+sudo chmod ugo+rwx /usr/share/Public2/F5
+sudo chmod ugo+rwx /usr/share/Public2/F5/file1
+sudo chmod 664 /usr/share/Public2/F5/file1
+
+Проверка: после chown :user23 и chmod g-w у F5 были права 0755 и владелец
+user22:user23. Попытка user23 создать F5/file1 завершилась ошибкой
+Permission denied. После chmod g+w права стали 0775 и создание файла user23
+прошло успешно. После ugo-rwx каталог имел режим 0000, после ugo+rwx — 0777.
+В конце примера F5 возвращён к 0775 и user22:user22, а file1 — к 0664.
