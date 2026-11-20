@@ -1,0 +1,109 @@
+Маска создания объектов и списки контроля доступа (ACL)
+
+1. Маска создания объектов umask
+Текущую маску показывает команда umask.
+$ umask
+0002
+При umask 0002 новый каталог получает 0775 (0777 & ~0002), а обычный файл — 0664 (0666 & ~0002).
+Проверка временной маски 0027 в отдельном каталоге.
+$ umask 0027
+$ mkdir F1
+$ touch file1
+$ stat F1 file1
+  File: F1
+  Size: 4096      	Blocks: 8          IO Block: 4096   directory
+Device: 252,0	Inode: 398053      Links: 2
+Access: (0750/drwxr-x---)  Uid: ( 1000/   chief)   Gid: ( 1000/   chief)
+Access: 2026-11-20 06:32:21.725272608 +0000
+Modify: 2026-11-20 06:32:21.725272608 +0000
+Change: 2026-11-20 06:32:21.725272608 +0000
+ Birth: 2026-11-20 06:32:21.725272608 +0000
+  File: file1
+  Size: 0         	Blocks: 0          IO Block: 4096   regular empty file
+Device: 252,0	Inode: 398054      Links: 1
+Access: (0640/-rw-r-----)  Uid: ( 1000/   chief)   Gid: ( 1000/   chief)
+Access: 2026-11-20 06:32:21.726272865 +0000
+Modify: 2026-11-20 06:32:21.726272865 +0000
+Change: 2026-11-20 06:32:21.726272865 +0000
+ Birth: 2026-11-20 06:32:21.726272865 +0000
+
+Режим каталога F1 — 0750 (rwxr-x---), режим файла file1 — 0640 (rw-r-----).
+Команда touch для существующего файла обновляет временные метки. Его режим сохраняется.
+
+Ранние опыты с другими значениями umask выполнены в /home/chief/InfS124-lab4.5guWRF/modes.
+При 0227 file3 получил 0440, а F1-0227 — 0550.
+При 0337 file4 и F2 получили 0440.
+При 0237 F3 получил 0540, то есть r-x для владельца, r-- для группы, --- для остальных.
+Режимы в итоговом состоянии после опыта с ACL. У file2 групповые биты отражают маску ACL.
+$ stat -c '%a %n' file1 file2 file3 file4 F1 F1-0227 F2 F3
+664 file1
+674 file2
+440 file3
+440 file4
+775 F1
+550 F1-0227
+440 F2
+540 F3
+
+2. Списки контроля доступа
+getfacl показывает ACL объекта, setfacl изменяет список.
+На этой виртуальной машине использованы существующие учётные записи и группы user22 и user23.
+Утилиты ACL и GCC запущены из распакованных пакетов Ubuntu.
+$ setfacl -m u:user23:rw-,u:user22:rw- file1
+$ setfacl -m g:user22:r--,g:user23:rw- file1
+$ setfacl --no-mask -m u:user22:rwx file1
+$ getfacl file1
+# file: file1
+# owner: chief
+# group: chief
+user::rw-
+user:user22:rwx	#effective:rw-
+user:user23:rw-
+group::rw-
+group:user22:r--
+group:user23:rw-
+mask::rw-
+other::r--
+
+У user22 записано rwx, но текущая маска ACL оставляет только rw-.
+$ setfacl -m g:user23:rwx file2
+$ getfacl file2
+# file: file2
+# owner: chief
+# group: chief
+user::rw-
+group::rw-
+group:user23:rwx
+mask::rwx
+other::r--
+
+У file2 маска пересчиталась до rwx.
+
+3. Маска ACL каталога F3
+Параметр --no-mask сохраняет текущую маску. Здесь она ограничивает именованные записи до r--.
+$ setfacl --no-mask -m u:user22:rwx,u:user23:rwx F3
+$ getfacl F3
+# file: F3
+# owner: chief
+# group: chief
+user::r-x
+user:user22:rwx	#effective:r--
+user:user23:rwx	#effective:r--
+group::r--
+mask::r--
+other::---
+
+Для каталога r позволяет читать имена записей, а x позволяет входить в каталог и обращаться к объектам внутри по имени.
+Эффективные права проверены через getfacl. Отдельный вход под user22 или user23 в этой виртуальной машине не выполнялся.
+
+Удаление именованных записей и сброс расширенного ACL
+$ setfacl --no-mask -m g:user23:rwx F3
+$ setfacl -x u:user22 F3
+$ setfacl -x g:user23 F3
+$ setfacl -b F3
+После удаления пользователя без --no-mask маска пересчиталась до rwx.
+Затем удалена именованная группа.
+После setfacl -b ACL вернулся к базовым записям владельца, группы и остальных, а режим каталога — к 0540.
+Для итоговой демонстрации на F3 снова добавлены два пользователя с маской r--.
+
+Полный вывод команд сохранён в /home/chief/InfS124-lab4.5guWRF/terminal.log.
